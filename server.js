@@ -1,8 +1,10 @@
-const express = require('express');
-const axios = require('axios');
-//const OpenAI = require('openai');
+import express from "express";
+import axios from "axios";
+import dotenv from "dotenv";
+import { AzureKeyCredential } from "@azure/core-auth";
+import ModelClient from "@azure-rest/ai-inference";
 
-require('dotenv').config();
+dotenv.config(); // Use dotenv with ES module syntax
 
 // const openai = new OpenAI({
 //     organization: "org-mBXnUKlU28MUeqtww9KvOSju",
@@ -50,15 +52,92 @@ app.get('/', (req, res) => {
 
 let requestCount = 0; // Counter to track the number of requests
 
-app.post('/api/analyze', async (req, res) => {
+app.post('/api/analyzeTry', async (req, res) => {
   requestCount++; // Increment the counter for each request
 
   const requestBody = req.body; // Read the body of the request
-  console.log(`Request #${requestCount}:`, requestBody); // Log the request body with the count
+  console.log(requestBody.content); // Log the request body with the count
 
   const response = Math.random() < 0.1 ? "yes" : "no"; // Generate a random response
   res.json({ result: response });
 });
 
+app.post('/api/analyzeV2', async (req, res) => {
+  requestCount++; // Increment the counter for each request
+
+  const requestBody = req.body; // Read the body of the request
+  const content = requestBody.content; // Extract the content to classify
+  console.log(`Request #${requestCount}: ${content}`); // Log the request body with the count
+
+  try {
+      // Call Azure OpenAI API to classify the content
+      const openaiResponse = await axios.post(
+          `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2025-01-01-preview`,
+          {
+              prompt: `${content}"`,
+              max_tokens: 5,
+              temperature: 0,
+          },
+          {
+              headers: {
+                  'Content-Type': 'application/json',
+                  'api-key': process.env.AZURE_OPENAI_API_KEY,
+              },
+          }
+      );
+
+      console.log(openaiResponse);
+      // Extract the classification result from the OpenAI response
+      const classification = openaiResponse.data.choices[0].text.trim().toLowerCase();
+
+      // Send the classification result as the API response
+      if (classification === "yes" || classification === "no") {
+          res.json({ result: classification });
+      } else {
+          console.error("Unexpected response from OpenAI:", classification);
+          res.status(500).json({ error: "Unexpected response from OpenAI" });
+      }
+  } catch (error) {
+      console.error("Error calling Azure OpenAI API:", error.message);
+      res.status(500).json({ error: "Failed to classify content" });
+  }
+});
+
+app.post('/api/analyze', async (req, res) => {
+  try {
+
+    const requestBody = req.body; // Read the body of the request
+  const content = requestBody.content; // Extract the content to classify
+  console.log(`Request #${requestCount}: ${content}`); // Log the request body with the count
+
+    const endpoint = `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT}`;
+    const modelName = "gpt-35-turbo";
+    const client = new ModelClient(endpoint, new AzureKeyCredential(`${process.env.AZURE_OPENAI_API_KEY}`));
+
+    const response = await client.path("/chat/completions").post({
+      body: {
+        messages: [
+          { role: "system", content: "You will be provided with a twitter post's content. You need to act as a classifier and classify it as related to politics or not. If yes, reply with a simple yes otherwise no. Just need a single one word response." },
+          { role: "user", content: `${content}` }
+        ],
+        max_tokens: 4096,
+        temperature: 1,
+        top_p: 1,
+        model: modelName
+      }
+    });
+
+    if (response.status !== "200") {
+      console.error("Error from Azure OpenAI API:", response.body.error);
+      return res.status(500).json({ error: response.body.error });
+    }
+
+    console.log(response.body.choices[0].message.content);
+    res.json({ result: response.body.choices[0].message.content });
+  } catch (error) {
+    console.error("Error in /api/analyzeV3:", error);
+    res.status(500).json({ error: "Failed to process the request" });
+  }
+});
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
