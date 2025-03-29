@@ -49,7 +49,7 @@ app.get('/', (req, res) => {
 // });
 
 app.post('/api/analyze', async (req, res) => {
-  const response = Math.random() < 0.9 ? "yes" : "no";
+  const response = Math.random() < 0.1 ? "yes" : "no";
   res.json({ result: response });
 })
 
