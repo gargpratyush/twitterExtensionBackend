@@ -48,10 +48,17 @@ app.get('/', (req, res) => {
 //     }
 // });
 
+let requestCount = 0; // Counter to track the number of requests
+
 app.post('/api/analyze', async (req, res) => {
-  const response = Math.random() < 0.1 ? "yes" : "no";
+  requestCount++; // Increment the counter for each request
+
+  const requestBody = req.body; // Read the body of the request
+  console.log(`Request #${requestCount}:`, requestBody); // Log the request body with the count
+
+  const response = Math.random() < 0.1 ? "yes" : "no"; // Generate a random response
   res.json({ result: response });
-})
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
