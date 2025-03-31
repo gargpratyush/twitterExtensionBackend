@@ -194,7 +194,10 @@ app.post('/api/analyzeBatch', async (req, res) => {
     // Parse the response from the model
     const classifications = JSON.parse(response.body.choices[0].message.content);
 
-    console.log("Batch classifications:", classifications);
+    // Log the classifications along with tweet text and ID
+    classifications.forEach((classification, index) => {
+      console.log(`Tweet ID: ${classification.id}, Text: "${tweets[index]}", Classification: ${classification.classification}`);
+    });
 
     res.json(classifications); // Send the classifications back to the client
   } catch (error) {
