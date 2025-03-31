@@ -139,6 +139,7 @@ app.post('/api/analyze', async (req, res) => {
     res.status(500).json({ error: "Failed to process the request" });
   }
 });
+
 app.post('/api/analyzeBatch', async (req, res) => {
   try {
     const requestBody = req.body; // Read the body of the request
