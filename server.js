@@ -159,7 +159,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
     const messages = [
       {
         role: "system",
-        content: `You are a classifier. You will be provided with a list of tweets along with their IDs. For each tweet, classify it as related to politics or not. Respond in the following JSON format:
+        content: `You are a classifier. You will be provided with a list of tweets along with their IDs. Your classification task is to classify tweets as related to politics or not. For tweets related to politics, set the classification to "yes". Respond in the following JSON format:
         [{"id": "tweet_id_1", "classification": "yes"}, {"id": "tweet_id_2", "classification": "no"}, ...].
         Only respond in this format. Do not include any additional text or explanation.`,
       },
