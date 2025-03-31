@@ -139,5 +139,68 @@ app.post('/api/analyze', async (req, res) => {
     res.status(500).json({ error: "Failed to process the request" });
   }
 });
+app.post('/api/analyzeBatch', async (req, res) => {
+  try {
+    const requestBody = req.body; // Read the body of the request
+    const tweets = requestBody.tweets; // Extract the array of tweets to classify
+    const ids = requestBody.ids; // Extract the array of tweet IDs
+
+    if (!Array.isArray(tweets) || tweets.length === 0 || !Array.isArray(ids) || ids.length !== tweets.length) {
+      return res.status(400).json({ error: "Invalid request. 'tweets' and 'ids' must be non-empty arrays of the same length." });
+    }
+
+    console.log(`Processing batch of ${tweets.length} tweets`);
+
+    const endpoint = `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT}`;
+    const modelName = "gpt-35-turbo";
+    const client = new ModelClient(endpoint, new AzureKeyCredential(`${process.env.AZURE_OPENAI_API_KEY}`));
+
+    // Prepare the messages for the batch
+    const messages = [
+      {
+        role: "system",
+        content: `You are a classifier. You will be provided with a list of tweets along with their IDs. For each tweet, classify it as related to politics or not. Respond in the following JSON format:
+        [{"id": "tweet_id_1", "classification": "yes"}, {"id": "tweet_id_2", "classification": "no"}, ...].
+        Only respond in this format. Do not include any additional text or explanation.`,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(
+          tweets.map((tweet, index) => ({
+            id: ids[index],
+            text: tweet,
+          }))
+        ),
+      },
+    ];
+
+    // Call the Azure OpenAI API
+    const response = await client.path("/chat/completions").post({
+      body: {
+        messages,
+        max_tokens: 4096,
+        temperature: 0, // Use deterministic responses
+        top_p: 1,
+        model: modelName,
+      },
+    });
+
+    if (response.status !== "200") {
+      console.error("Error from Azure OpenAI API:", response.body.error);
+      return res.status(500).json({ error: response.body.error });
+    }
+
+    // Parse the response from the model
+    const classifications = JSON.parse(response.body.choices[0].message.content);
+
+    console.log("Batch classifications:", classifications);
+
+    res.json(classifications); // Send the classifications back to the client
+  } catch (error) {
+    console.error("Error in /api/analyzeBatch:", error);
+    res.status(500).json({ error: "Failed to process the batch request" });
+  }
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
