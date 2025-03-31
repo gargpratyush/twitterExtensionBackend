@@ -145,6 +145,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
     const requestBody = req.body; // Read the body of the request
     const tweets = requestBody.tweets; // Extract the array of tweets to classify
     const ids = requestBody.ids; // Extract the array of tweet IDs
+    const media = requestBody.media; // Extract the array of media URLs
 
     if (!Array.isArray(tweets) || tweets.length === 0 || !Array.isArray(ids) || ids.length !== tweets.length) {
       return res.status(400).json({ error: "Invalid request. 'tweets' and 'ids' must be non-empty arrays of the same length." });
@@ -170,6 +171,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
           tweets.map((tweet, index) => ({
             id: ids[index],
             text: tweet,
+            media: media[index],
           }))
         ),
       },
@@ -179,7 +181,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
     const response = await client.path("/chat/completions").post({
       body: {
         messages,
-        max_tokens: 4096,
+        max_tokens: 400,
         temperature: 0, // Use deterministic responses
         top_p: 1,
         model: modelName,
@@ -196,7 +198,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
 
     // Log the classifications along with tweet text and ID
     classifications.forEach((classification, index) => {
-      console.log(`Tweet ID: ${classification.id}, Text: "${tweets[index]}", Classification: ${classification.classification}`);
+      console.log(`Tweet ID: ${classification.id}, Text: "${tweets[index]}", Media: "${media[index]}", Classification: ${classification.classification}`);
     });
 
     res.json(classifications); // Send the classifications back to the client
