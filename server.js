@@ -146,7 +146,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
     const tweets = requestBody.tweets; // Extract the array of tweets to classify
     const ids = requestBody.ids; // Extract the array of tweet IDs
     const media = requestBody.media; // Extract the array of media URLs
-
+    console.log(media);
     if (!Array.isArray(tweets) || tweets.length === 0 || !Array.isArray(ids) || ids.length !== tweets.length) {
       return res.status(400).json({ error: "Invalid request. 'tweets' and 'ids' must be non-empty arrays of the same length." });
     }
