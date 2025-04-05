@@ -162,7 +162,7 @@ app.post('/api/analyzeBatch', async (req, res) => {
       {
         role: "system",
         content: `You are a classifier. You will be provided with a list of tweets along with their IDs. Your classification task is to classify tweets as related to politics or not. For tweets related to politics, set the classification to "yes". Respond in the following JSON format:
-        [{"id": "tweet_id_1", "classification": "yes"}, {"id": "tweet_id_2", "classification": "no"}, ...].
+        [{"id": "tweet_id_1", "classification": "yes", "isMediaPolitical":"yes/no", "canISeeTheImage:"yes/no","explainationWhyMediaIsPolitical":"..."}, {"id": "tweet_id_2", "classification": "no", "isMediaPolitical":"yes/no"}, ...].
         Only respond in this format. Do not include any additional text or explanation.`,
       },
       {
@@ -193,9 +193,11 @@ app.post('/api/analyzeBatch', async (req, res) => {
       return res.status(500).json({ error: response.body.error });
     }
 
+    
     // Parse the response from the model
     const classifications = JSON.parse(response.body.choices[0].message.content);
-
+    console.log(classifications);
+    
     // Log the classifications along with tweet text and ID
     classifications.forEach((classification, index) => {
       console.log(`Tweet ID: ${classification.id}, Text: "${tweets[index]}", Media: "${media[index]}", Classification: ${classification.classification}`);
