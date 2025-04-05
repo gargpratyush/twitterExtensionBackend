@@ -161,9 +161,9 @@ app.post('/api/analyzeBatch', async (req, res) => {
     const messages = [
       {
         role: "system",
-        content: `You are a classifier. You will be provided with a list of tweets along with their IDs. Your classification task is to classify tweets as related to politics or not. For tweets related to politics, set the classification to "yes". Respond in the following JSON format:
-        [{"id": "tweet_id_1", "classification": "yes", "describeTheImage":"..."}, {"id": "tweet_id_2", "classification": "no", "describeTheImage":"..."}, ...].
-        Only respond in this format. Do not include any additional text or explanation.`,
+        content: `You are a classifier. You will be provided with a list of tweets along with their IDs and Base64-encoded media (images or videos). Your classification task is to classify tweets as related to politics or not. For tweets related to politics, set the classification to "yes". Additionally, describe the media content briefly. Respond in the following JSON format:
+    [{"id": "tweet_id_1", "classification": "yes"}, {"id": "tweet_id_2", "classification": "no"}, ...].
+    Only respond in this format. Do not include any additional text or explanation.`,
       },
       {
         role: "user",
